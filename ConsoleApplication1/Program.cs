@@ -142,14 +142,17 @@ namespace ConsoleApplication1
                     {
                         int dTarget = (1 << dPow);
                         Tuple<int, int, int, bool[]> T0;
-                        if (dPow > 0)
-                        {
+                        // if (dPow > 0)
+                        // {
                             T0 = Helpers.BestDepthReducingSetExcludeGreedy(DAG,dTarget);
-                        }
-                        else
-                        {
-                            T0 = Greedy.myGreedyDRSetsApxNoSorting(DAG, dTarget, radius, nNodes);
-                        }
+                        // }
+                        // else
+                        // {
+                        //     T0 = Greedy.myGreedyDRSetsApxNoSorting(DAG, dTarget, radius, nNodes);
+                        // }
+                        // FIXME: Commenting out invalid code, see:
+                        //  https://github.com/NewAttacksAndStrongerConstructions/PebblingAndDepthReductionAttacks/issues/1.
+
                         // Tuple<int, int, int, bool[]> T0 = Helpers.BestDepthReducingSetExcludeGreedy(P.Item1, dTarget);
                         int e = T0.Item2;
                         double minCost = P.Item3;
