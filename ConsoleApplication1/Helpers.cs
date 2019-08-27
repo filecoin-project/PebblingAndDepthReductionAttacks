@@ -1126,6 +1126,8 @@ namespace ConsoleApplication1
                 T = BuildDepthReducingSetValiantHelper(DAG, S, bbase);
                 S = T.Item4;
                 depth = T.Item1;
+                // FIXME: We should keep track of the `E_i` already "used" (added to
+                // the set `S`) instead of making the callee figure that out in every iteration.
             }
             return T;
 
@@ -1188,26 +1190,50 @@ namespace ConsoleApplication1
         /// <returns>depth of new graph G-S and depth reducing set S</returns>
         public static Tuple<int, int, int, bool[]> BuildDepthReducingSetValiantHelper(int[] DAG, bool[] currentS, int bbase = 2)
         {
+            // Depth of every node, updated during the algorithm (instead of the
+            // final `Depth` call). The depth of the chain *up to* that node, *not*
+            // the max depth.
             int[] depths = new int[DAG.Length];
-            byte[] edgeLabels = new byte[DAG.Length];
+
+            // Number of nodes in each partition? The 32 indicates that we use at most 32 bits
+            // for node labels.
             int[] EiCounts = new int[32];
+
+            // Depth reducing set, where `true` means that node `i` is included in the set.
             bool[] S = new bool[DAG.Length];
+
             depths[0] = (currentS[0]) ? 0 : 1;
             int currentDepth = 0;
             for (int i = 1; i < DAG.Length; i++)
             {
+                // If node `i` is part of `S` (excluded) its depth is automatically zero.
                 depths[i] = currentS[i] ? 0:1;
+
+                // Take the maximum depth out of its two possible parents, the direct predecessor
+                // and the "random" parent in `DAG`.
                 if (currentS[i - 1] == false) depths[i] = Math.Max(depths[i], depths[i - 1] + 1);
                 if (currentS[DAG[i]] == false) depths[i] = Math.Max(depths[i], depths[DAG[i]] + 1);
-                currentDepth = Math.Max(currentDepth, depths[i]);
+                // FIXME: The way to indicate the base case of depth 1 for a single node could be
+                // improved (removing the `+ 1` here).
 
+                // Current depth up to node `i`.
+                currentDepth = Math.Max(currentDepth, depths[i]);
+                // FIXME: This could just be the maximum in the vector outside the loop.
             }
+            // FIXME: Could be encapsulated in its own function, all we did was calculate
+            // depths of nodes *independent* of the Valiant attack.
+
+            // Populate `EiCounts`.
             for (int i = 0; i < DAG.Length - 1; i++)
             {
+                // FIXME: Calling MSDB with node depths instead of indexes, why?
                 if (!currentS[i] && !currentS[i + 1]) EiCounts[MSDB(depths[i], depths[i + 1], bbase)]++;
                 if (!currentS[i] && !currentS[DAG[i]]) EiCounts[MSDB(depths[i], depths[DAG[i]], bbase)]++;
             }
             if (!currentS[DAG.Length - 1] && !currentS[DAG[DAG.Length - 1]]) EiCounts[MSDB(depths[DAG.Length - 1], depths[DAG[DAG.Length - 1]], bbase)]++;
+
+            // `j` would seem to indicate how many partition levels of `Ei` have been used
+            // to construct the `currentS`.
             int j = -1;
             int min = 10 * DAG.Length;
             for (int i = 0; i < 30; i++)
@@ -1218,11 +1244,16 @@ namespace ConsoleApplication1
                     j = i;
                 }
             }
+            // `j` is now `j*` from the paper with the smaller set of edges in the
+            // color set.
+
+            // Add to `S` the nodes from the group `E_j*`.
             int maxDepth = 0;
             int count = 0;
             for (int i = 1; i < DAG.Length; i++)
             {
                 S[i] = currentS[i];
+                // Also add the contents from the previous set.
 
                 if (MSDB(depths[i - 1], depths[i], bbase) == j || MSDB(depths[i], depths[DAG[i]], bbase) == j)
                 {
@@ -1238,6 +1269,7 @@ namespace ConsoleApplication1
 
             return new Tuple<int, int, int, bool[]>(maxDepth, count, count, S);
         }
+
         /// <summary>
         /// One Round of Valiant Lemma, output S which reduces depth to depth(G-S)<= 2^i whenver depth(G) <= 2^{i+1} 
         /// </summary>

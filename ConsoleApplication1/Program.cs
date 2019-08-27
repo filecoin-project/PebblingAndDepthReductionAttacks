@@ -213,7 +213,7 @@ namespace ConsoleApplication1
         {
 
             int seed = 123456;
-            //depthExperiment3(21, 24, 16, seed);
+            depthExperiment3(12, 16, 16, seed);
             //attackExperiment(23, 23, seed);
             Console.ReadLine();
             //Console.WriteLine(Greedy.depth(DAG,S));
